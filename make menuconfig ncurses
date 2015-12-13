@@ -1,0 +1,9 @@
+在目标文件夹（一般是/usr/src/kernels）下先解压内核源代码：tar jxvf linux-2.6.xx.xx.tar.bz2，然后cd到解压后的源代码目录树的根目录下运行make指令。
+make clean应该是支持的。如果还不行可以试试 make mrproper，这个清除得更彻底。
+
+在主机文件系统/usr/src目录下，系统内核文件目录，header-generic目录下，make menuconfig，
+提示错误信息：make menuconfig requires the "ncurses libraries"
+尝试了只安装 apt-get install libncurses或者 apt-get install ncurses依然报错。
+解决方法： apt-get install libncurses*
+
+安装库文件后，可以正常sudo make manuconfig
