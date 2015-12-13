@@ -1,0 +1,27 @@
+在内核版本3.6主机系统上，可以使用网卡，lsusb显示网卡设备信息。
+ifconfig -a显示ppp网口信息。
+在图形界面上通过网络连接到gsm网络，浏览器可以正常上网。
+
+在内核版本2.6.38开发板上,插上网卡，lsusb不显示设备信息，通过cat /proc/bus/usb/devices可以查看到网卡的VID 和 PID信息
+开发板/etc/目录下有usb_modeswitch.conf文件，里面有网卡的信息，将最末的mode从0改为1
+
+# Huawei, newer modems
+
+DefaultVendor= 0x12d1
+DefaultProduct=0x1446
+
+TargetVendor= 0x12d1
+TargetProduct= 1001
+
+CheckSuccess=20
+
+MessageContent="55534243123456780000000000000011062000000100000000000000000000"
+
+考虑是缺少驱动：
+ 编译4g模块的驱?.ko ：配置内核时4G驱动对应的选项需编译成模块，3g下对应的“USB driver for GSM and CDMA modems”
+ 才能在后面转换时生成ttyUSB0、ttyUSB1、ttyUSB2。
+ 
+解决： 
+在不升级开发板内核的情况下，只增加驱动下载到开发板上；
+设计开发板内核
+是否需要modeswitch将网卡转换成存储模式到modemn模式
