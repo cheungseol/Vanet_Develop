@@ -1,0 +1,164 @@
+Attached is the syslog when I connect thedongle. I have added the
+echo "12d1 1506" > /sys/bus/usb-serial/drivers/option1/new_id
+
+lsmod shows:
+
+option                 29746  0
+usb_wwan               14830  1 option
+usbserial              27212  2 option,usb_wwan
+
+I have not yet applied to cdc_ncm patch. Should work fine on both 3.7.0-rc4 and 3.6.xt need.
+
+
+I can send
+echo -e ATI > /dev/ttyUSB0 and then I get
+
+Manufacturer: huawei
+Model: E3276
+Revision: 21.192.03.01.07
+IMEI: 863781010146687
++GCAP: +CGSM,+DS,+ES
+
+When i send
+
+ echo -e AT^NDISDUP=1,1,"telia.online.se" > /dev/ttyUSB0
+
+I have got various responses, (ERROR, +CME ERROR: 50) but sometimes
+(?) I get an echo back
+
+AT^NDISDUP=1,1,telia.online.se
+
+Led is flashing blue (I have removed PIN-verification).
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+Have added the patch now.
+I can send
+
+ echo -e AT^NDISDUP=1,1,"telia.online.se" > /dev/ttyUSB0
+
+and /dev/ttyUSB0 I get the command echo'ed back but no other feedback.
+
+lsmod still lists
+
+option                 29746  0
+usb_wwan               14830  1 option
+usbserial              27212  2 option,usb_wwan
+
+so I can't see any cdc-ncm driver loaded.No wwanX device (when I do ifconfig).
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+Now it actually connected (from minicom):
+
+AT^NDISDUP=1,1,"online.telia.se"
+OK
+
+^NDISSTAT:1,,,"IPV4"
+AT^DHCP
+OK
+
+The blue led is now constantly on so I guess the only thing that is
+needed now is the network layer right?
+
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+
+The cdc_ncm driver I tried is from the following link.
+http://www.spinics.net/lists/linux-usb/msg32494.html
+
+This driver is working OK, but sometimes "CDC: unexpected notification 0x1"
+will show up.
+
+By the way, the cdc_ncm driver from GIT is NOT working for me either.
+cdc_ncm driveit will get "bind() failure"when doing usb_driver_claim_interface.
+
+
+Here are the steps on how I do it.
+==========================================
+# insmod /tmp/cdc_ncm.ko 
+usb 1-1: MAC-Address: 0x0c:0x5b:0x8f:0x27:0x9a:0x64
+eth5: register 'cdc_ncm' at usb-rtl8652-ehci.0-1, CDC NCM, 0c:5b:8f:27:9a:64
+usbcore: registered new interface driver cdc_ncm
+# 
+# insmod /bin/usbserial.ko 
+usbcore: registered new interface driver usbserial
+USB Serial support registered for generic
+usbcore: registered new interface driver usbserial_generic
+usbserial: USB Serial Driver core
+# insmod /bin/option.ko 
+USB Serial support registered for GSM modem (1-port)
+usbcore: registered new interface driver option
+option: v0.7.2:USB Driver for GSM modems
+# cat /proc/bus/usb/devices 
+
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  3 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=12d1 ProdID=1506 Rev= 1.02
+S:  Manufacturer=HUAWEI Technology
+S:  Product=HUAWEI Mobile
+C:* #Ifs= 4 Cfg#= 1 Atr=80 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=02 Prot=12 Driver=option
+E:  Ad=81(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:  If#= 1 Alt= 0 #EPs= 1 Cls=ff(vend.) Sub=02 Prot=16 Driver=cdc_ncm
+E:  Ad=82(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+I:* If#= 1 Alt= 1 #EPs= 3 Cls=ff(vend.) Sub=02 Prot=16 Driver=cdc_ncm
+E:  Ad=82(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=(none)
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+I:* If#= 3 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=(none)
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+# 
+# 
+# atc -l /dev/ttyUSB0 -c 'at^ndisdup=1,1,"internet"'
+at^ndisdup=1,1,"internet"
+OK
+
+# ifconfig eth5 up
+enable_periodic
+#usb 1-1: CDC: unexpected notification 0x03!
+ usb 1-1: CDC: unexpected notification 0x01!
+usb 1-1: CDC: unexpected notification 0x01!
+usb 1-1: CDC: unexpected notification 0x03!
+usb 1-1: CDC: unexpected notification 0x01!
+usb 1-1: CDC: unexpected notification 0x01!
+usb 1-1: CDC: unexpected notification 0x01!
+usb 1-1: CDC: unexpected notification 0x01!
+# 
+# dhcpc.sh eth5 wait&
+# udhcp client (v0.9.9-pre) started
+into eth5.deconfig
+Sending select for 223.142.101.137...
+Lease of 223.142.101.137 obtained, lease time 518400
+adding dns 168.95.1.1
+adding dns 168.95.192.1
+
+# ifconfig eth5
+eth5      Link encap:Ethernet  HWaddr 0C:5B:8F:27:9A:64  
+          inet addr:223.142.101.137  Bcast:223.142.101.139  Mask:255.255.255.252
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:4294967289 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+
+# ping -c 4 8.8.8.8
+PING 8.8.8.8 (8.8.8.8): 56 data bytes
+64 bytes from 8.8.8.8: seq=0 ttl=46 time=110.000 ms
+64 bytes from 8.8.8.8: seq=1 ttl=46 time=110.000 ms
+64 bytes from 8.8.8.8: seq=2 ttl=46 time=110.000 ms
+64 bytes from 8.8.8.8: seq=3 ttl=46 time=130.000 ms
+
+
+
+
+
+
+http://lists.freedesktop.org/archives/libqmi-devel/2012-November/000337.html
