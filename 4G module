@@ -1,11 +1,27 @@
+内核文件用现成的2.6.38版本，里面的配置选项符合要求。
+4g操作按文档进行，生产的需要下载到板子上的文件放在4g_movefile文件夹下。
+E3276的  VID  PID  在主机上lsusb可见，usb_modeswitch.conf参见usb_modeswitch.data文件，或者来源网上
+DefaultVendor= 0x12d1
+DefaultProduct= 0x14fe
+
+TargetVendor=  0x12d1
+TargetProduct= 0x1506
+
+DNW usb口有问题，软件驱动原因。
+遇到多个COM口无故被占用情况，解决方法：打开CMD命令行，输入regedit打开注册表，
+找到HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\COM Name Arbiter，然后把ComDB删除,扫描检测硬件改动即可，不行的话重启PC即可
+
+
+
+
 在内核版本3.6主机系统上，可以使用网卡，lsusb显示网卡设备信息。
 ifconfig -a显示ppp网口信息。
 在图形界面上通过网络连接到gsm网络，浏览器可以正常上网。
 不能通过所谓的4g虚拟出一个新网卡的形式上网，仍然是3g ppp拨号上网。
 
 在内核版本2.6.38开发板上,插上网卡，lsusb不显示设备信息，通过cat /proc/bus/usb/devices可以查看到网卡的VID 和 PID信息
-开发板/etc/目录下有usb_modeswitch.conf文件，里面有网卡的信息，将最末的mode从0改为1
-
+开发板/etc/目录下有usb_modeswitch.conf文件，里面有网卡的信息
+这个是3G网卡的配置文件
 # Huawei, newer modems
 
 DefaultVendor= 0x12d1
